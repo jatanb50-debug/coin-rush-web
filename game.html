@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>COIN RUSH V2</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090909;color:#f5c542;font-family:Arial,sans-serif}
+.app{max-width:430px;margin:auto;min-height:100vh;padding:22px 18px 90px}
+.header{display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:21px;font-weight:900;letter-spacing:2px}
+.pill{border:1px solid #6d5520;border-radius:20px;padding:8px 12px;font-size:12px}
+.card{background:linear-gradient(145deg,#1d1a11,#101010);border:1px solid #403318;border-radius:18px;padding:18px;margin-top:20px}
+.label{font-size:12px;color:#aaa;letter-spacing:1px}
+.balance{text-align:center;font-size:36px;font-weight:bold;margin:12px 0}
+.coin-area{display:flex;justify-content:center;margin:24px 0}
+.coin{width:210px;height:210px;border-radius:50%;border:7px solid #ffe58a;background:radial-gradient(circle at 35% 28%,#fff0a5,#e5ad21 42%,#7d4d06 72%,#f8cf4c);box-shadow:0 0 28px #d99b2b55,inset 0 0 0 5px #b77b10;display:flex;align-items:center;justify-content:center;color:#603b00;font-size:82px;cursor:pointer;user-select:none;transition:transform .08s}
+.coin:active{transform:scale(.94)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:#171717;border:1px solid #302818;border-radius:14px;padding:15px}
+.stat strong{display:block;font-size:20px;margin-top:9px}
+.progress{height:8px;background:#292929;border-radius:8px;overflow:hidden;margin-top:12px}
+.bar{height:100%;width:100%;background:linear-gradient(90deg,#bb8416,#ffe17a)}
+.section-title{font-size:16px;font-weight:bold;margin-bottom:12px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+button{border:1px solid #66501d;background:#1c1a14;color:#f5c542;padding:14px 8px;border-radius:12px;font-weight:bold;font-size:14px}
+button:active{opacity:.75}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;display:grid;grid-template-columns:repeat(4,1fr);background:#111;border-top:1px solid #403318;padding:12px 5px calc(12px + env(safe-area-inset-bottom))}
+.nav button{border:0;background:transparent;font-size:11px;padding:8px 2px}
+.nav span{display:block;font-size:20px;margin-bottom:5px}
+.notice{text-align:center;color:#888;font-size:11px;margin-top:18px}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="header">
+    <div class="logo">🪙 COIN RUSH</div>
+    <div class="pill">⭐ LEVEL 1</div>
+  </header>
+
+  <section class="card" style="text-align:center">
+    <div class="label">YOUR MINING BALANCE</div>
+    <div class="balance"><span id="balance">0</span> <small style="font-size:15px">CR</small></div>
+    <div class="label">TAP THE COIN TO MINE</div>
+    <div class="coin-area"><div class="coin" id="coin" role="button" aria-label="Tap coin">₿</div></div>
+    <div class="label">+1 CR PER TAP · DEMO MODE</div>
+  </section>
+
+  <section class="stats">
+    <div class="stat">
+      <div class="label">⚡ ENERGY</div>
+      <strong><span id="energy">500</span> / 500</strong>
+      <div class="progress"><div class="bar" id="energybar"></div></div>
+    </div>
+    <div class="stat">
+      <div class="label">⛏️ MINING RATE</div>
+      <strong>+1 <small>CR / TAP</small></strong>
+      <div class="label" style="margin-top:8px">LEVEL 1 MINER</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">🚀 Boost Center</div>
+    <div class="actions">
+      <button id="boost">⚡ Quick Boost</button>
+      <button id="daily">🎁 Daily Reward</button>
+      <button id="tasks">📋 Tasks</button>
+      <button id="friends">👥 Friends</button>
+    </div>
+    <p id="message" style="font-size:13px;color:#ccc;text-align:center;margin:16px 0 0">স্বাগতম Miner! কয়েন ট্যাপ করে দেখো।</p>
+  </section>
+
+  <div class="notice">COIN RUSH V2 · DEMO BALANCE ONLY</div>
+</main>
+
+<nav class="nav">
+  <button id="home"><span>🏠</span>Home</button>
+  <button id="mine"><span>⛏️</span>Mining</button>
+  <button id="tasknav"><span>📋</span>Tasks</button>
+  <button id="profile"><span>👤</span>Profile</button>
+</nav>
+
+<script>
+const tg=window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+let balance=0;
+let energy=500;
+let dailyClaimed=false;
+const balanceEl=document.getElementById("balance");
+const energyEl=document.getElementById("energy");
+const energybar=document.getElementById("energybar");
+const message=document.getElementById("message");
+
+function render(){
+  balanceEl.textContent=balance.toLocaleString();
+  energyEl.textContent=energy;
+  energybar.style.width=(energy/500*100)+"%";
+}
+
+document.getElementById("coin").addEventListener("click",()=>{
+  if(energy<=0){
+    message.textContent="⚡ Energy শেষ! একটু অপেক্ষা করো।";
+    return;
+  }
+  balance++;
+  energy--;
+  render();
+  message.textContent="✨ +1 CR! চালিয়ে যাও Miner!";
+});
+
+document.getElementById("boost").onclick=()=>{
+  energy=Math.min(500,energy+50);
+  render();
+  message.textContent="⚡ Demo Boost: 50 Energy পর্যন্ত রিফিল হয়েছে!";
+};
+
+document.getElementById("daily").onclick=()=>{
+  if(dailyClaimed){
+    message.textContent="🎁 আজকের Demo Reward নেওয়া হয়েছে!";
+    return;
+  }
+  dailyClaimed=true;
+  balance+=100;
+  render();
+  message.textContent="🎉 Demo Reward: +100 CR!";
+};
+
+document.getElementById("tasks").onclick=()=>{
+  message.textContent="📋 Tasks সেকশন পরের ধাপে যুক্ত করব।";
+};
+document.getElementById("friends").onclick=()=>{
+  message.textContent="👥 Referral সেকশন পরের ধাপে যুক্ত করব।";
+};
+document.getElementById("home").onclick=()=>{
+  message.textContent="🏠 Welcome to COIN RUSH!";
+};
+document.getElementById("mine").onclick=()=>{
+  message.textContent="⛏️ কয়েন ট্যাপ করে Demo Mining করো!";
+};
+document.getElementById("tasknav").onclick=()=>{
+  message.textContent="📋 Tasks ফিচার এখনও তৈরি হচ্ছে।";
+};
+document.getElementById("profile").onclick=()=>{
+  message.textContent="👤 Profile ফিচার পরের ধাপে যুক্ত হবে।";
+};
+
+render();
+</script>
+</body>
+</html>
